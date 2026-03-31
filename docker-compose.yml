@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: lumohub_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lumohub
+      POSTGRES_USER: lumohub
+      POSTGRES_PASSWORD: lumohub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: lumohub_backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: LumoHub API
+      APP_ENV: development
+      SECRET_KEY: super-secret-key-change-me
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      DATABASE_URL: postgresql+psycopg://lumohub:lumohub@db:5432/lumohub
+      CORS_ORIGINS: http://localhost:3000
+      FRONTEND_URL: http://localhost:3000
+      LUMO_WS_ENABLED: "true"
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.db.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: lumohub_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_BASE_URL: ws://localhost:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

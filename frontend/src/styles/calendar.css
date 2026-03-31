@@ -1,0 +1,9 @@
+.fc {
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.fc-toolbar-title {
+  font-size: 1.1rem !important;
+}
